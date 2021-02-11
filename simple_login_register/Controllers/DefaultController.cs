@@ -10,40 +10,32 @@ namespace simple_login_register.Controllers
 {
     public class DefaultController : ApiController
     {
+        Repository repo = new Repository();
 
         [HttpPost]
         public HttpResponseMessage RegisterUser(users u)
         {
             try
             {
-                using (UserContext db = new UserContext())
-                {
-                    if (u.uname != null && u.password != null)
+                    if ( string.IsNullOrWhiteSpace(u.uname)==false && string.IsNullOrWhiteSpace(u.password) == false)
                     {
-                        if (db.role.Count() == 0)
-                        {
-                            roles r = new roles();
-                            r.role = "user";
-                            db.role.Add(r);
-                            db.SaveChanges();
-                            var rolee = db.role.SingleOrDefault();
-                            u.roleid = rolee.id;
-                            db.user.Add(u);
-                            db.SaveChanges();
+
+                        roles r = repo.Roles();
+                        int i = repo.addUser(u, r.id);
+
+                    if (i > 0)                   // 1 means new user registered
+                    {
+                            return Request.CreateResponse(HttpStatusCode.OK, 1);
                         }
-                        else
-                        {
-                            users usr = new users();
-                            var rolee = db.role.SingleOrDefault();
-                            u.roleid = rolee.id;
-                            db.user.Add(u);
-                            db.SaveChanges();
+                    else                            // 0 means user already register 
+                    {
+                            return Request.CreateResponse(HttpStatusCode.Forbidden, 0);
                         }
-                        return Request.CreateResponse(HttpStatusCode.OK, "user registered");
+
                     }
-                    else
-                        return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "enter username password");
-                }
+
+                else                                //3 means user password fields should not be empty
+                    return Request.CreateResponse(HttpStatusCode.Forbidden, 3);
             }
             catch (Exception ex)
             {
@@ -56,24 +48,25 @@ namespace simple_login_register.Controllers
         {
             try
             {
-                if (u.uname!=""  && u.password !="")
+                if (string.IsNullOrWhiteSpace(u.uname)==false  && string.IsNullOrWhiteSpace(u.password)==false)
+
                 {
                     using (UserContext DB = new UserContext())
                     {
-                        var users = DB.user.Where(usr => usr.password == u.password & usr.uname == u.uname).SingleOrDefault();
-                        if (users != null)
+
+                        if (repo.loginUser(u)>0)
                         {
-                            var roles = DB.role.Where(rol => rol.id == users.roleid).SingleOrDefault();
-                            string msg = "your role is " + roles.role;
-                            return Request.CreateResponse(HttpStatusCode.OK, msg);
+                            //var roles = repo.Roles();
+                            //string msg = "your role is " + roles.role;
+                            return Request.CreateResponse(HttpStatusCode.OK,1);
                         }
-                        else
-                            return Request.CreateResponse(HttpStatusCode.Forbidden, "wrong username password");
+                        else          //2 means username password didnt mathced
+                            return Request.CreateResponse(HttpStatusCode.Forbidden,0);
                     }
 
-                }
-                else
-                    return Request.CreateResponse(HttpStatusCode.BadRequest, "enter the username password");
+                } 
+                else                 //0 means enter username password
+                    return Request.CreateResponse(HttpStatusCode.BadRequest,2);
             }
             catch (Exception ex)
             {

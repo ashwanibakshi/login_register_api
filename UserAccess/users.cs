@@ -20,7 +20,6 @@ namespace UserAccess
 
         [Required]
         [StringLength(15)]
-        [Index("password", IsUnique = true)]
         public string password { get; set; }  
 
         public int roleid { get; set; }
